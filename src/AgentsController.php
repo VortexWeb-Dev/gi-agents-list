@@ -7,7 +7,7 @@ class AgentsController
     private $agentDepartmentIds = [5, 78, 77, 442, 443];
     private $designationMap = [
         41340 => 'Management',
-        41341 => 'Brocker',
+        41341 => 'Broker',
     ];
 
     public function processRequest(string $method): void
