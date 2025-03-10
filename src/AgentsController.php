@@ -33,7 +33,7 @@ class AgentsController
             return;
         }
         $departments = array_filter($departmentsResponse['result'], function ($department) {
-            return $department['ID'] != 444;
+            return $department['ID'] != 444 && $department['ID'] != 77;
         });
 
         $users = $this->getAllUsers();
