@@ -3,7 +3,6 @@ require_once __DIR__ . "/../crest/crest.php";
 
 class AgentsController
 {
-    private $cacheExpiry = 300;
     private $agentDepartmentIds = [5, 78, 77, 442, 443];
     private $designationMap = [
         41340 => 'Management',
@@ -22,15 +21,6 @@ class AgentsController
 
     private function processCollectionRequest(): void
     {
-        $cacheKey = "agents_list";
-
-        $cachedData = $this->getCache($cacheKey);
-
-        if ($cachedData !== false) {
-            $this->sendJsonResponse($cachedData);
-            return;
-        }
-
         $departmentsResponse = CRest::call('department.get');
         if (empty($departmentsResponse['result'])) {
             $this->sendErrorResponse(404, "No departments found");
@@ -97,10 +87,53 @@ class AgentsController
             }
         }
 
-        $this->setCache($cacheKey, $responseData);
-        $this->sendJsonResponse($responseData);
+        $this->sendXmlResponse($responseData);
     }
 
+    private function sendXmlResponse(array $data): void
+    {
+        header('Content-Type: application/xml; charset=utf-8');
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+
+        $root = $dom->createElement('response');
+        $dom->appendChild($root);
+
+        $this->arrayToDomXml($data, $root, $dom);
+
+        echo $dom->saveXML();
+        exit;
+    }
+
+    private function arrayToDomXml(array $data, \DOMElement $parent, \DOMDocument $dom): void
+    {
+        foreach ($data as $key => $value) {
+            if (is_numeric($key)) {
+                $parentName = $parent->nodeName;
+                $itemName = rtrim($parentName, 's');
+                if ($itemName === $parentName) {
+                    $itemName = 'item';
+                }
+                $key = $itemName;
+            }
+
+            $key = preg_replace('/[^a-z0-9_-]/i', '_', $key);
+
+            if (is_array($value)) {
+                $node = $dom->createElement($key);
+                $parent->appendChild($node);
+                $this->arrayToDomXml($value, $node, $dom);
+            } else {
+                $element = $dom->createElement($key);
+                $parent->appendChild($element);
+
+                if ($value !== null && $value !== '') {
+                    $element->appendChild($dom->createCDATASection((string)$value));
+                }
+            }
+        }
+    }
 
     private function getAllUsers(): array
     {
@@ -124,36 +157,23 @@ class AgentsController
         return $allUsers;
     }
 
-    private function getCache(string $key)
-    {
-        $cacheFile = sys_get_temp_dir() . "/bitrix_" . md5($key) . ".cache";
-
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $this->cacheExpiry)) {
-            return json_decode(file_get_contents($cacheFile), true);
-        }
-
-        return false;
-    }
-
-    private function setCache(string $key, $data): void
-    {
-        $cacheFile = sys_get_temp_dir() . "/bitrix_" . md5($key) . ".cache";
-        file_put_contents($cacheFile, json_encode($data));
-    }
-
-    private function sendJsonResponse($data): void
-    {
-        header("Content-Type: application/json");
-        header("Cache-Control: max-age=300, public");
-        echo json_encode($data);
-        exit;
-    }
-
     private function sendErrorResponse(int $code, string $message): void
     {
-        header("Content-Type: application/json");
+        header("Content-Type: application/xml; charset=utf-8");
         http_response_code($code);
-        echo json_encode(["error" => $message]);
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+
+        $root = $dom->createElement('response');
+        $dom->appendChild($root);
+
+        $errorElement = $dom->createElement('error');
+        $root->appendChild($errorElement);
+
+        $errorElement->appendChild($dom->createCDATASection($message));
+
+        echo $dom->saveXML();
         exit;
     }
 }
