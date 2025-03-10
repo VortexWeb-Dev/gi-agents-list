@@ -50,6 +50,7 @@ class AgentsController
                 'full_name' => implode(' ', array_filter([$user['NAME'], $user['SECOND_NAME'] ?? '', $user['LAST_NAME']])),
                 'email' => $user['EMAIL'] ?? '',
                 'phone' => !empty($user['WORK_PHONE']) ? $user['WORK_PHONE'] : ($user['PERSONAL_MOBILE'] ?? ''),
+                'whatsapp_number' => !empty($user['WORK_PHONE']) ? $user['WORK_PHONE'] : ($user['PERSONAL_MOBILE'] ?? ''),
                 'photo' => !empty($user['UF_WEB_SITES']) ? $user['UF_WEB_SITES'] : ($user['PERSONAL_PHOTO'] ?? ''),
                 'position' => $user['WORK_POSITION'] ?? '',
                 'designation' => $this->designationMap[(int)$user['UF_USR_1741618074302']] ?? '',
@@ -57,6 +58,10 @@ class AgentsController
 
             if (!empty($userData['phone']) && $userData['phone'][0] !== '+') {
                 $userData['phone'] = '+' . $userData['phone'];
+            }
+
+            if (!empty($userData['whatsapp_number']) && $userData['whatsapp_number'][0] !== '+') {
+                $userData['whatsapp_number'] = '+' . $userData['whatsapp_number'];
             }
 
             $isAgent = false;
