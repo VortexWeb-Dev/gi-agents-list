@@ -32,7 +32,9 @@ class AgentsController
             $this->sendErrorResponse(404, "No departments found");
             return;
         }
-        $departments = $departmentsResponse['result'];
+        $departments = array_filter($departmentsResponse['result'], function ($department) {
+            return $department['ID'] != 444;
+        });
 
         $users = $this->getAllUsers();
 
