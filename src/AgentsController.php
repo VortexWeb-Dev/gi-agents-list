@@ -5,6 +5,10 @@ class AgentsController
 {
     private $cacheExpiry = 300;
     private $agentDepartmentIds = [5, 78, 77, 442, 443];
+    private $designationMap = [
+        41340 => 'Management',
+        41341 => 'Brocker',
+    ];
 
     public function processRequest(string $method): void
     {
@@ -47,6 +51,10 @@ class AgentsController
         $agents = [];
 
         foreach ($users as $user) {
+            if (!isset($user['UF_USR_1741618074302']) || $user['UF_USR_1741618074302'] ===  null) {
+                continue;
+            }
+
             $userData = [
                 'id' => $user['ID'],
                 'full_name' => implode(' ', array_filter([$user['NAME'], $user['SECOND_NAME'] ?? '', $user['LAST_NAME']])),
@@ -54,6 +62,7 @@ class AgentsController
                 'phone' => !empty($user['WORK_PHONE']) ? $user['WORK_PHONE'] : ($user['PERSONAL_MOBILE'] ?? ''),
                 'photo' => !empty($user['UF_WEB_SITES']) ? $user['UF_WEB_SITES'] : ($user['PERSONAL_PHOTO'] ?? ''),
                 'position' => $user['WORK_POSITION'] ?? '',
+                'designation' => $this->designationMap[(int)$user['UF_USR_1741618074302']] ?? '',
             ];
 
             if (!empty($userData['phone']) && $userData['phone'][0] !== '+') {
